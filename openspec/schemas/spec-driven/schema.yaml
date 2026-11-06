@@ -1,0 +1,631 @@
+name: spec-driven
+version: 1
+description: Opinionated spec-driven workflow - proposal → specs → design → lld → qa-checklist → tasks
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    description: Business-facing proposal document outlining the change
+    template: proposal.md
+    instruction: |
+      Create the proposal document that establishes WHY this change is needed. It is a
+      non-technical, business-facing document - written for product, QA and support, not for
+      engineers. Nothing here should require the reader to know the codebase.
+
+      **Planning only: do not make any code changes while writing this document.**
+
+      **Writing style — bullets and diagrams, not prose (applies to every section).** The
+      reader understands best from bullet points and diagrams:
+      - Explain with short bullets (one idea each), never paragraphs. A section that would
+        be a paragraph becomes 3-6 bullets.
+      - Give each concept a diagram: a model or relationship → mermaid flowchart/class
+        diagram; a lifecycle → stateDiagram; a flow → flowchart or sequence diagram; a
+        computed figure → the arithmetic laid out line by line.
+      - Keep table cells short (a phrase). Move any reasoning longer than one line out of the
+        table into a bulleted sub-section under it.
+      - Worked examples use real-looking figures, shown as bullets or an ASCII mockup.
+
+      Sections (follow the template's structure and order):
+      - **Why**: 2-4 bullets on the problem or opportunity. What problem does this solve? Why
+        now? How does it work today, if at all?
+      - **What Changes**: What changes for the user/business, in plain language, with a mermaid
+        flowchart pair (before/after, never ASCII art) for each existing flow the change alters. Mark breaking changes with
+        **BREAKING**.
+        - **Key concepts** (REQUIRED, never omitted, inside What Changes before the flow
+          diagrams): every new word a business reader meets, explained before it is used — one
+          mermaid diagram of how the concepts relate, then Concept | What it means for you |
+          Example. Concepts with their own rules (an approval step, a recurring task, a grouping)
+          get 3-5 bullets: what, why, what it does NOT cover, one example. No table/class names.
+      - **Workflow Journey** (REQUIRED, placed before User Stories and linked from the header):
+        one worked journey from "nothing set up" to the outcome, listing EVERY action in order -
+        who is involved; one mermaid flowchart of the whole journey (subgraph per part: before
+        you start / once / every time / if something changes later, numbered steps, decision
+        diamonds, fix-and-retry loops); prerequisites; a table per part with Step | Who | Where
+        (screen › button) | Action | What the system does | What you see; ASCII mockups of the
+        key screens with realistic example figures and the arithmetic behind any computed value;
+        at least one failing path and its fix; and a minimum-actions summary (who, how often).
+        A reader must be able to follow the feature end to end from this section alone.
+      - **User Stories**, **UI Behavior**, **What This Feature Does NOT Cover**, **Validation
+        Rules**, **Behavior Rules**, **Resolved Design Decisions**: fill these in with concrete,
+        testable detail - specific UI elements, messages, and scenarios, not code. These sections
+        are what QA and support will use to verify the feature by hand.
+      - **Capabilities**: Identify which specs will be created or modified:
+        - **New Capabilities**: List capabilities being introduced. Each becomes a new `specs/<capability-path>/spec.md`. Use kebab-case for path segments you introduce (e.g., `user-auth` or `identity/user-auth`) and follow the project's existing spec organization.
+        - **Modified Capabilities**: List existing capabilities whose REQUIREMENTS are changing. Only include if spec-level behavior changes (not just implementation details). Each needs a delta spec file. Use the exact existing path under `openspec/specs/`. Leave empty if no requirement changes.
+      - **Impact**: Affected code, APIs, dependencies, or systems - named at a level a
+        non-technical reader can still follow (e.g. "the billing settings page", not a class name).
+      - **Benefits**: Concrete benefits for the end user.
+      - **FAQ**: Anticipate the questions business/product/QA/support will actually ask (access,
+        data migration, notifications, pricing/billing, rollout). Keep answers non-technical and
+        link to design.md for "how" rather than explaining implementation here.
+      - **Design Principle for the Next Phase**: flag anything in this proposal that risks a
+        complex design, so the design phase deals with it explicitly. The design must come out
+        DRY and simple - prefer reusing existing services/components over new abstractions.
+
+      IMPORTANT: The Capabilities section is critical. It creates the contract between
+      proposal and specs phases. Research existing specs before filling this in:
+      run `openspec list --specs` for the project's capability inventory, then
+      `openspec show "<spec-id>" --type spec --json --no-scenarios` for any that
+      look related - that returns a capability's purpose and requirement texts
+      without pulling whole spec files into context. Append `--store "<id>"` to
+      both commands only for a registered standalone store, and keep `--type
+      spec`: a change and a spec sharing a name is otherwise an ambiguous-item
+      error. `openspec list` without `--specs` lists in-flight changes, not
+      specs - it never shows what the project already covers. Reuse an existing
+      capability's exact path instead of introducing a near-duplicate name.
+      The filtered read is only an overview. Before deciding what is already
+      covered or what should change, read each relevant spec in full, including
+      scenarios, with `openspec show "<spec-id>" --type spec` (same `--store` rule).
+      Each capability listed here will need a corresponding spec file.
+
+      Every change must either declare at least one capability (new or
+      modified) or explicitly opt out of specs: `openspec validate` rejects a
+      change with zero deltas unless the change's `.openspec.yaml` sets
+      `skip_specs: true`. Use `skip_specs: true` only when no spec-level
+      behavior changes (pure refactor, tooling, docs) - specs describe
+      behavior, so if behavior does not change, no spec should change either.
+      Do not invent a requirement just to satisfy validation.
+
+      Keep it concise. Focus on the "why" and the business behavior, not the "how" -
+      implementation details belong in design.md.
+
+      This is the foundation - specs, design, and tasks all build on this.
+    requires: []
+
+  - id: specs
+    generates: "specs/**/*.md"
+    description: Detailed specifications for the change
+    template: spec.md
+    instruction: |
+      Create specification files that define WHAT the system should do.
+
+      A spec is a behavior contract, not an implementation plan.
+
+      Good spec content:
+      - Observable behavior users or downstream systems rely on
+      - Inputs, outputs, and error conditions
+      - External constraints (security, privacy, reliability, compatibility)
+      - Scenarios that can be tested or explicitly validated
+
+      Avoid in specs:
+      - Internal class/function names
+      - Library or framework choices
+      - Step-by-step implementation details
+      - Detailed execution plans (those belong in design.md or tasks.md)
+
+      Quick test: if the implementation can change without changing externally
+      visible behavior, it likely does not belong in the spec.
+
+      Create one spec file per capability listed in the proposal's Capabilities section.
+      `<capability-path>` is the spec directory relative to `specs/` (for example,
+      `user-auth` or `identity/user-auth`). Preserve the full path:
+      - New capabilities: use the exact path from the proposal at `specs/<capability-path>/spec.md`. Any path segment newly introduced in the proposal must be kebab-case. Follow the project's existing organization; do not add a new domain level when the project uses a flat layout.
+      - Modified capabilities: use the exact existing path from `openspec/specs/<capability-path>/` when creating the delta at `specs/<capability-path>/spec.md`. Run `openspec list --specs` to confirm that path before writing the delta, appending `--store "<id>"` only for a registered standalone store - a mistyped or invented path targets a capability that does not exist rather than the one you meant. Do not move or rename the capability.
+
+      There must be at least one spec file unless the change's `.openspec.yaml`
+      sets `skip_specs: true` (no spec-level behavior change) - `openspec validate`
+      rejects a zero-delta change without that marker. If the proposal lists no
+      capabilities and `skip_specs` is not set, revisit the proposal first.
+
+      Delta operations (use ## headers):
+      - **ADDED Requirements**: New capabilities
+      - **MODIFIED Requirements**: Changed behavior - MUST include full updated content
+      - **REMOVED Requirements**: Deprecated features - MUST include **Reason** and **Migration**
+      - **RENAMED Requirements**: Name changes only - use FROM:/TO: format
+
+      Format requirements:
+      - Each requirement: `### Requirement: <name>` followed by description
+      - Use SHALL/MUST for normative requirements (avoid should/may)
+      - Each scenario: `#### Scenario: <name>` with WHEN/THEN format
+      - **CRITICAL**: Scenarios MUST use exactly 4 hashtags (`####`). Using 3 hashtags or bullets will fail silently.
+      - Every requirement MUST have at least one scenario.
+
+      New capabilities only: the delta spec's first section is `## Purpose` -
+      one or two sentences (50+ characters, or `openspec validate --strict`
+      reports it as too brief) describing what the capability is for. Archive
+      copies it into the main spec it creates; without it the new main spec is
+      left with a `TBD ... Update Purpose after archive` placeholder to fill in
+      by hand. Do NOT add `## Purpose` to a delta for an existing capability -
+      that spec already has one and the delta's is ignored. To change an
+      existing capability's Purpose - including a leftover `TBD` placeholder -
+      edit `<planningHome.root>/openspec/specs/<capability-path>/spec.md`
+      directly. `planningHome.root` comes from the `openspec instructions ...
+      --json` response. Always use it rather than a repo-relative path: it
+      resolves to the store whenever the change lives in one - whether that
+      came from `--store`, a project `store:` pointer, or a global default
+      store - and to the current repository otherwise. Do not try to work out
+      which case applies; the field already has.
+
+      MODIFIED requirements workflow:
+      1. Locate the existing requirement in `<planningHome.root>/openspec/specs/<capability-path>/spec.md` (the same store-aware root as above)
+      2. Copy the ENTIRE requirement block (from `### Requirement:` through all scenarios)
+      3. Paste under `## MODIFIED Requirements` and edit to reflect new behavior
+      4. Ensure header text matches exactly (whitespace-insensitive)
+
+      Common pitfall: Using MODIFIED with partial content loses detail at archive time.
+      If adding new concerns without changing existing behavior, use ADDED instead.
+
+      Example (a new capability, so its first section is `## Purpose`):
+      ```
+      # Spec Delta
+
+      ## Purpose
+
+      Lets users take their data out of the product in a portable format.
+
+      ## ADDED Requirements
+
+      ### Requirement: User can export data
+      The system SHALL allow users to export their data in CSV format.
+
+      #### Scenario: Successful export
+      - **WHEN** user clicks "Export" button
+      - **THEN** system downloads a CSV file with all user data
+
+      ## REMOVED Requirements
+
+      ### Requirement: Legacy export
+      **Reason**: Replaced by new export system
+      **Migration**: Use new export endpoint at /api/v2/export
+      ```
+
+      Specs should be testable - each scenario is a potential test case, and should map onto an
+      automated acceptance scenario written in the tasks phase.
+    requires:
+      - proposal
+
+  - id: design
+    generates: design.md
+    description: Technical design document with implementation details
+    template: design.md
+    instruction: |
+      Create the design document that explains HOW to implement the change, for an engineering
+      audience. design.md is always created, since tasks depend on it. Its size scales with the
+      change.
+
+      **Planning only: do not make any code changes while writing this document.**
+
+      **Writing style — bullets and diagrams, not prose (applies to every section).** The
+      reader understands best from bullet points and diagrams:
+      - Explain with short bullets (one idea each), never paragraphs. A section that would
+        be a paragraph becomes 3-6 bullets.
+      - Give each concept a diagram: a model or relationship → mermaid flowchart/class
+        diagram; a lifecycle → stateDiagram; a flow → flowchart or sequence diagram; a
+        computed figure → the arithmetic laid out line by line.
+      - Keep table cells short (a phrase). Move any reasoning longer than one line out of the
+        table into a bulleted sub-section under it.
+      - Worked examples use real-looking figures, shown as bullets or an ASCII mockup.
+
+      Rules that apply to every section:
+      - **Design, not code.** Tell the design through mermaid diagrams and tables. Do NOT paste
+        class bodies, migrations, route blocks, authorization-policy code or front-end controller code. Put real
+        class, method, table and path names inside the diagrams and tables instead.
+      - **CORE vs CONDITIONAL.** Every CORE section is filled in. A CONDITIONAL section is filled
+        in only when its "include when" rule applies. Otherwise keep the heading with a single
+        line `N/A — <reason>`. Do not pad a small change to fill the template.
+      - **No repetition.** Each fact lives in exactly one section. The proposal owns user-facing
+        behaviour and mockups, the spec owns requirements, design owns how. Link instead of
+        restating.
+      - **FAQ per section.** Part 1, Part 2, every card in Part 3 and Part 4 each end with a
+        FAQ table (Question | Answer) of the real "why", "why not X" and "what if" questions a
+        reviewer will ask about that section, answered from the design. No filler questions.
+      - **Diagrams must render.** Before finishing, lint every mermaid block and fix failures
+        until it exits 0:
+        `d=$(mktemp -d); echo '{"args":["--no-sandbox"]}' > $d/p.json; npx -y @mermaid-js/mermaid-cli -q -p $d/p.json -i <changeRoot>/design.md -o $d/out.md; echo exit=$?`
+        (known gotcha: `Note` is reserved in sequence diagrams, so never use it as a participant id).
+        Keep every flowchart edge label AND stateDiagram transition label to about 16 characters per
+        line, breaking longer ones with
+        `<br/>`: VS Code's Markdown preview measures text differently from mermaid-cli and clips long
+        single-line edge labels, even when the lint passes.
+
+      **Zoom one picture.** The whole design hangs off ONE numbered picture so it is easy to
+      grasp. Part 1 draws it in plain words. Part 2 redraws the SAME picture (same shape, same
+      numbers ①②③, same arrows) with real names. Part 3 has one card per box in the same order.
+      Part 4 holds reference material spanning several boxes. A reader can stop at any depth and
+      always knows which box they are in. Do not use C4 diagrams: this structure replaces them.
+      Render the two pictures to PNG (`-e png`) and check that they have the same layout.
+
+      Sections, in the template's order:
+      - **Contents** (CORE): links to every ## and ### heading (GitHub anchors keep ①②③).
+        Regenerate it after the document is finished.
+      - **1. The idea** (CORE, readable in five minutes):
+        - **What this adds**: 2-3 sentences, naming the existing pattern it follows.
+        - **The idea in one picture**: ONE flowchart, 5-9 boxes numbered ①②③ in reading order,
+          plain-English names plus a one-line description each, the core of the idea in the
+          middle, every arrow labelled. No class names, subgraphs, colours or error paths.
+        - **Key concepts** (CORE, never omitted, right after the picture and before the
+          walkthrough): a concept map (mermaid flowchart), a Glossary table (Concept | What it is,
+          in one line | Example from the walkthrough data | Stored in), and one #### explainer per
+          concept with its own rules or lifecycle (approval models such as maker–checker,
+          recurring obligations such as duties, groupings such as episodes): what + why, a
+          kinds/triggers table with examples, what it does NOT cover, one sequence/timeline
+          diagram, rules incl. exceptions and reject/undo. Every domain noun, status word and role
+          used later must be defined here; later sections link back instead of re-explaining.
+          A concept must never appear first in a card, decision or schema table.
+        - **Walkthrough: one example, start to finish**: a realistic example told as a story right
+          after the picture: setup, a legend for any notation, optional mermaid `timeline`, then
+          phase tables (# | When | What happens | Behind the scenes citing ①②③ | Result) including
+          at least one undo/mistake and one stall/failure (Result spelled out: every step by name with
+          its mark, one per line, current in bold, never a compact symbol string; unchanged rows say
+          "Same as row N"), one ASCII snapshot of the key moment, and
+          "What to notice" bullets.
+        - **Key ideas**: 3-7 rows (Idea | In one line | Card), each linking to its card.
+        - **FAQ**.
+      - **2. The same picture with real names** (CORE):
+        - **Picture**: the same flowchart with real classes/tables/partials in the boxes, plus one
+          italic line per box saying what it does, a `click` link per box to its card, and real
+          contracts on the arrows. Boxes coloured new (green), modified (amber) or reused (grey);
+          this is the only footprint list (file paths belong in lld.md and tasks.md).
+        - **What each box does**: # | Box | Real parts | What it does | When it runs | What it
+          decides | Details (link to the card).
+        - **One run, end to end**: one sequenceDiagram of the main happy path across the boxes.
+        - **Lifecycles** (CORE if any stored or derived status exists): a stateDiagram-v2 per
+          lifecycle, triggers labelled, stored vs derived stated.
+        - **What users see** (CONDITIONAL, whenever a screen, email or alert changes): an "At a
+          glance" table plus the main everyday journey (ASCII wireframe with ①②③ callouts and a
+          Step | The user… | They see table). Other journeys go in their box's card. Messages stay
+          in the proposal. PLUS a **Screen standards** table (REQUIRED whenever a screen is added
+          or changed): one row per screen — Screen | Kind | Copies (a real existing screen) |
+          Breadcrumbs | Tabs (lazy-loaded) | Partial updates (which actions update in place) |
+          Stats cards (= grid totals) | Filter + search | Actions (header buttons + overflow
+          menu) | Help (title ⓘ intro tooltip, field tooltips, empty state, What's next) | Width.
+          The reference screens to copy (index, show, tabs, forms) come from the project context
+          in openspec/config.yaml; if it names none, pick the closest existing screen and say so.
+          Never write "reuse existing styling" without naming the screen. Help text is a tooltip,
+          never a grey paragraph; a coloured box only when something needs attention.
+        - **Design decisions** (CORE): an At a glance table (# | Decision | Why, in one line),
+          numbered D1, D2… in order; then one #### block per decision with five bullets —
+          Problem (plain words + concrete example), Decision (real names), Why (2-4 bullets),
+          Not chosen (alternative and why not), Where (classes/tables). Only use concepts from Key
+          concepts. Favour the simpler/DRYer option. During apply, add a "Changed during the
+          build" table (Log # | What changed | Why) and correct any decision the build changed,
+          so design.md never contradicts the code.
+        - **FAQ**.
+      - **3. One card per box** (CORE): one ### card per box, in picture order (a trivial box may
+        share a card with its neighbour). Every card: what it is (1-2 sentences); an Owns | Reads /
+        receives | Produces row; only the detail that box owns (edge/error sequence diagrams,
+        decision flowcharts, component responsibility rows with queue/retry/idempotency/transaction,
+        routes and build notes for UI, the role → access table with tenant scoping where access
+        is checked, secondary user journeys); **Worked examples:** the H/E/X IDs that prove it;
+        **FAQ**. Link to Part 4 for schema and class diagram instead of copying them.
+      - **4. Reference**:
+        - **Class diagram** (CORE): classDiagram of every new or changed class in `namespace`
+          blocks, with stereotypes and public methods.
+        - **Data model and schema changes** (CONDITIONAL, when tables or columns change): an
+          `erDiagram`, indexes on one line, a **Schema changes** block (per new/changed table: one
+          sentence on why it changes, then a Column / index | What changed | Why it's needed row
+          for EVERY new or changed column and index), and changes to existing models as bullets.
+        - **Component contracts** (CORE): From → To | Contract | Direction rule, one row per arrow
+          in the Part 2 picture.
+        - **Notifications** (CORE, never skipped): every email, in-app alert, SMS or chat message the
+          change sends, adds, changes or suppresses, for EVERY audience — external users (customers,
+          clients, partners) and internal staff. One table: Notification | Trigger | Recipients |
+          Channel | Customisable | Default | Sent once?. Recipients are named roles (the approver
+          role, the account's owner, a notification-preference tag), never "everyone with access";
+          an external collaborator receives a notification only when they are authorized to see
+          that record. Customisable = can a tenant override the wording/template (customer-facing
+          emails usually yes, internal alerts usually no). Default = on/off, and where it is
+          switched. Sent once = how re-runs and retries are kept from re-sending. If the change
+          truly sends nothing, keep the heading and say why after considering every audience — a
+          bare "N/A" is not enough.
+        - **Cross-cutting concerns**: Transactions and queries (CONDITIONAL); Exception handling
+          and monitoring (CONDITIONAL, tied to the app's alerting/notification mechanism);
+          Performance (CORE) — which MUST include a **Query budget** table (Page / frame / job |
+          Rows | Queries budget, independent of rows | Preloads / grouped queries | Per-row lookups
+          avoided) covering every page, partial and job the change adds, with the rule that nothing
+          inside a row loop queries (no per-row exists/count/find, querying policy checks or
+          un-preloaded associations; access checks and nav/card counts loaded once per request).
+          Each phase gate runs its tests with the project's N+1 detector enabled (named in the
+          project context) and fixes every N+1 in the change's code.
+        - **Architecture and design patterns** (CORE — never omitted): a table Pattern | How this
+          design applies it | Existing example reused | Where (box / class). One row per item below;
+          a row may say "not needed — reason". Where the project context names the project's own
+          tool for a pattern (module-boundary checker, job queue, UI framework), use it. Items:
+          1. **Module boundaries** — new code lives in one module/package for its domain;
+             cross-module calls go through the other module's public API; dependencies declared
+             (and enforced, where the project has a boundary checker).
+          2. **Thin controllers, skinny models** — controllers/handlers authorize, load and render;
+             multi-step business flows are explicit operations / use-cases, single-purpose logic is
+             a service with one entry point; models hold associations, validations, scopes and
+             small queries.
+          3. **Single responsibility, deep modules** — each box has one job, a small interface and
+             hides its detail; composition over inheritance.
+          4. **Reuse before you add** — existing mixins/concerns, services, partials, components and
+             helpers are used before anything new is written; say which ones in the table. Changes
+             to existing models are flagged for approval.
+          5. **Configuration as data** — where users or operators must change behaviour without a
+             release, model it as data with a global-default + tenant-override pattern, versioned
+             when results depend on it.
+          6. **Explicit state machines** — status columns with the allowed transitions and guards in
+             one place, drawn as a stateDiagram; every transition recorded (audit library or a
+             history table).
+          7. **Append-only audit records** — results, snapshots and approvals are written once and
+             never updated; corrections are new rows.
+          8. **Background work** — anything slow, scheduled or AI-backed runs in background jobs that
+             are idempotent, retry-safe, fan out per record, and are registered in the project's
+             scheduler; no long calls in the request path.
+          9. **Notifications** — through the app's existing notification/mailer layer; tenant-
+             customisable messages through its template mechanism; one place decides recipients.
+          10. **UI** — the app's existing front-end stack and components (partial page updates,
+              reusable components, presenters/decorators for formatting); copy existing screens'
+              styling (no new CSS).
+          11. **Queries and data** — aggregate in SQL, filter/sort only on allowlisted attributes,
+              money as integer minor units (cents), no N+1, the project's large-table rules; no
+              speculative eager loads.
+          12. **AI** — only through the project's single LLM service wrapper with the tenant's
+              configured provider; prompts and parsing in one service; structured output validated
+              like form input; AI calls in jobs, never in a run path that must be deterministic.
+          13. **Rollout** — per-tenant enablement (feature flag), phased delivery, each phase
+              shippable alone.
+          14. **YAGNI / DRY** — no abstraction without two real callers; no duplicated rules between
+              proposal, spec and design.
+        - **Security** (CORE — never omitted, never "N/A"): a table with one row per item below —
+          Item | How this design meets it | Where (box / class / policy) | Test (H/E/X or security
+          test scenario). Every new endpoint/controller action, job, policy, upload, AI call and
+          token must appear somewhere in the table. Items:
+          1. **Authorization** — every action goes through the policy layer; records are loaded
+             through a tenant/permission-scoped query and then authorized, never a bare
+             `find(params[:id])`. No new exemption from the "every action is authorized" guard
+             without a written reason. Every allow/refuse rule lives in the policy, delegating to
+             the parent record's policy; no predicate that is just a feature flag or `true`.
+          2. **Tenant isolation** — every query is scoped to the user's tenant and access; the
+             tenant id is read-only after create; every other parent id the client can send is
+             validated as same-tenant on create AND update; external-user-facing paths use the
+             narrowest scope and never fall back to "all rows of an accessible parent".
+          3. **Mass assignment** — permitted params cover only what the form edits; never the
+             tenant id, owner/parent ids, approval flags, status, approver, or role fields.
+          4. **No code from data** — no `eval`, dynamic method dispatch or class-name-from-string
+             on user- or AI-supplied strings; use an allowlist; stored expressions only through a
+             sandboxed evaluator.
+          5. **Injection** — SQL only through bound parameters / the query builder; no identifier
+             interpolation; filter and sort attributes explicitly allowlisted (a filter library
+             that silently ignores unknown conditions turns a wrong name into "return everything");
+             no raw-HTML output of user or document text; file names and template paths never
+             taken from params.
+          6. **Background jobs** — jobs take ids, reload the record through its tenant, and
+             re-check that the acting user still has access; never trust ids captured at enqueue
+             time for a different tenant; idempotent on retry.
+          7. **Files and documents** — uploads validated for type and size; served through
+             authorized/expiring URLs, never public paths; document text treated as untrusted data.
+          8. **AI / LLM** — document and user text is untrusted input (prompt injection): it goes in
+             as data, the model gets no tools that write, output is structured and validated like
+             form input, and AI output never authorizes anything. Few-shot examples and context
+             come only from the requesting tenant. Send the minimum PII, use the tenant's
+             configured provider, and record what was sent.
+          9. **Webhooks, tokens, links** — verify provider signatures; tokens have a purpose and an
+             expiry; no open redirects from params.
+          10. **Rate limiting and cost** — expensive or AI endpoints sit behind a rate limiter or a
+              per-tenant cap.
+          11. **Audit and logging** — sensitive changes (approvals, overrides, role changes) recorded
+              with who/when/before→after (audit library or an explicit history table); no PII or
+              secrets in logs (the framework's parameter filtering); secrets only in the secret store.
+          12. **Verification** — the project's static security scanner and dependency audit are
+              clean for the change; one security test scenario per new endpoint/action (another
+              tenant's user refused, owner allowed, a direct request that bypasses the UI refused).
+
+        - **Worked examples** (CORE): Happy Path (H1..), Edge Cases (E1..), Error Cases (X1..)
+          tables with columns # | Scenario | Given | When | Then | Spec scenario | Feature, using
+          real-ish data from a shared-setup table. Every spec scenario must appear in the Spec
+          scenario column of at least one row. Each row becomes exactly one acceptance test scenario.
+          **No H/E/X row without a test scenario, and no scenario without an H/E/X row.**
+          The Edge Cases and Error Cases tables are EXHAUSTIVE, not illustrative: for every box,
+          walk boundaries and exact-equal thresholds, zero / blank / negative values, several
+          records of each kind, rounding, dates on and either side of a cut-off or
+          month/year end, out-of-order state transitions, re-runs and double clicks, permissions and
+          direct requests that bypass the UI, and the closed/legacy path that must stay unchanged.
+        - **Testing** (CORE, 2-4 lines): the acceptance test framework (from the project
+          context), shared setup, and reused vs new step/helper files.
+          State the traceability rule: every scenario carries a comment naming its ID and path, and
+          code comments name the IDs of the paths they implement (see the tasks rules).
+        - **Risks and open questions** (CORE): risk → mitigation bullets; open questions only if
+          genuinely deferrable, otherwise resolve them with the user now.
+        - **FAQ**.
+    requires:
+      - proposal
+
+  - id: lld
+    generates: lld.md
+    description: Low-level design - the implementation decisions a developer reviews and signs off
+    template: lld.md
+    instruction: |
+      Create the low-level design (LLD): the implementation-level decisions a reviewing developer
+      must check and sign off before coding starts. It is ADDITIVE to design.md. Do not change
+      design.md, and do not restate it. Link to design.md sections (boundaries, class diagram,
+      sequences, worked examples) and go one level deeper.
+
+      **Planning only: do not make any code changes while writing this document.**
+
+      **Writing style — bullets and diagrams, not prose (applies to every section).** The
+      reader understands best from bullet points and diagrams:
+      - Explain with short bullets (one idea each), never paragraphs. A section that would
+        be a paragraph becomes 3-6 bullets.
+      - Give each concept a diagram: a model or relationship → mermaid flowchart/class
+        diagram; a lifecycle → stateDiagram; a flow → flowchart or sequence diagram; a
+        computed figure → the arithmetic laid out line by line.
+      - Keep table cells short (a phrase). Move any reasoning longer than one line out of the
+        table into a bulleted sub-section under it.
+      - Worked examples use real-looking figures, shown as bullets or an ASCII mockup.
+
+      Rules:
+      - Write for a developer reviewer. Every section must make a reviewable decision explicit
+        (a type, a limit, an index, a lock, a retry count, an error mapping), not describe the
+        feature again.
+      - Tables first. Short snippets (a method signature, a query shape, a config line) are
+        allowed where they are clearer than prose. Full class bodies and full migrations are not.
+      - Sections follow the template's CORE / CONDITIONAL rules. A section that doesn't apply keeps
+        its heading with `N/A — <reason>`.
+      - Every section ends with a **Reviewer checks** list of `- [ ]` items the developer ticks
+        during review. These are concrete, falsifiable checks, not "looks good".
+      - The LLD carries a CORE **Security detail** section: per new action/job/AI call, the exact
+        policy method, scope used to load, permitted params, and the security scenario that covers it.
+      - The closing **Project rules checklist** is CORE. It carries this repo's standing rules
+        (from the project context and the repo's agent/contributor docs such as CLAUDE.md,
+        AGENTS.md or CONTRIBUTING.md) marked Applies / N/A, and it is how the reviewer confirms
+        those rules were considered.
+      - **Sign-off** table at the end: reviewer, date, decision (approved / changes requested).
+      - A **Contents** TOC at the top linking every ## and ### heading.
+      - Where the LLD resolves a design Open Question, say so and link to it.
+    requires:
+      - design
+
+  - id: qa-checklist
+    generates: qa-checklist.md
+    description: Manual QA checklist for testers, run by hand after implementation
+    template: qa-checklist.md
+    instruction: |
+      Create the manual QA checklist that a tester (not a developer) runs by hand against a
+      deployed build after implementation. Plain language, no code, no class names. Write it for
+      someone who knows the product's screens but not this feature's internals.
+
+      Sources, with nothing new invented:
+      - Every worked example in design.md (H/E/X IDs) becomes one checklist row with the SAME ID,
+        so a failed row maps straight to its automated test scenario.
+      - Every step of every UI journey in design.md (Part 2 "What users see" and the cards) becomes a row, with IDs J1.1,
+        J1.2, ... (journey.step).
+      - Every user-facing message in the proposal's Behavior Rules / Validation Rules is checked
+        verbatim in at least one row's Expected result.
+      - The role → access table from design.md Policy becomes the Role sweep matrix.
+
+      Rules:
+      - Each row: ☐ box, ID, what to check, preconditions, steps (numbered, clicks and inputs),
+        expected result (exact on-screen text where there is one), Pass/Fail, notes/defect link.
+      - Say how to trigger background work by hand when a row depends on it (e.g. "click Sync now"
+        or "ask a developer to run the job").
+      - Cross-cutting checks are CORE: emails/alerts received and dated in the app's email date
+        format; screen dates in the user's locale format; narrow/mobile width; tenant isolation
+        (a second tenant's user cannot see the data); a regression spot-check of every modified
+        screen.
+      - A **Contents** TOC at the top, the ID legend (H/E/X/J/R/C), and a Sign-off table at the
+        end (tester, build/commit, environment, date, result, open defects).
+    requires:
+      - specs
+      - design
+
+  - id: tasks
+    generates: tasks.md
+    description: Phase-gated implementation checklist with trackable tasks
+    template: tasks.md
+    instruction: |
+      Create the task list that breaks down the implementation work into phases. A phase is a
+      numbered task group in the template.
+
+      **IMPORTANT: Follow the template below exactly.** The apply phase parses
+      checkbox format to track progress. A box holding only `x` counts as done,
+      upper or lower case and with any spacing, so `- [ x]` is done too. Every
+      other marker, including `- [~]`, `- [-]` and an empty `- []`, reads as
+      unfinished. A line with no checkbox is not tracked at all.
+
+      Before writing tasks, check design.md for Open Questions. If any of them
+      would change what gets built, resolve them with the user first - do not
+      bake an unstated assumption into the task list.
+
+      **Phase gate - this is the key rule:** every numbered phase's LAST task is to write an
+      acceptance test file exercising that phase's worked examples from design.md (happy path +
+      its edge/error cases) and run it with the project's acceptance test command (from the
+      project context in openspec/config.yaml) until it is green. Do not add tasks for the next
+      phase that assume the previous phase's tests already pass - the task list itself should make
+      it clear that phase N+1 only starts once phase N's test run is green.
+
+      Before that green run, every phase ends with two more gate tasks (always present; the UI one
+      may say "no screens changed in this phase"):
+      - **UI review** — screenshot each new/changed screen beside the reference screen named in
+        design.md's *Screen standards* table and check it against the same columns (breadcrumbs,
+        lazy tabs, in-place updates for row actions, stats cards = grid totals, standard filter +
+        search, header buttons + overflow menu, title ⓘ tooltip / field tooltips / empty states /
+        What's next, width). Fix differences in the same phase.
+      - **N+1 check** — run the phase's tests with the project's N+1 detector enabled, read its
+        output and fix every N+1 whose stack is in this change's code; list ones from shared code
+        with call sites rather than editing them. If the project has no N+1 detector, say so in
+        the task and count queries on the phase's main page/job by hand instead.
+      Test runs: wait on each run's PID (`cmd & p=$!; wait $p`), never a `while pgrep` loop
+      (it matches itself).
+
+      Guidelines:
+      - Group related tasks under ## numbered headings (phases)
+      - Each task MUST be a checkbox: `- [ ] X.Y Task description`
+      - Tasks should be small enough to complete in one session
+      - Order tasks by dependency (what must be done first?)
+      - Each non-final task in a phase MUST state how to verify completion (a command, observable
+        behavior, or delivered artifact) in its own checkbox description
+      - Each phase MUST land the tests and documentation its own work calls for, in the test
+        file that closes the phase - do NOT collect testing into a final phase, since a late
+        phase's failures then cascade back through every phase in between and force rework
+      - A phase whose work calls for neither tests nor docs (scaffolding, dependency setup) still
+        needs some way to verify it worked, but does not need a full test file - use judgment
+      - Respect any per-run test environment requirements the project context lists (an isolated
+        database per run, services that must be running, env vars)
+
+      Example (`<test-cmd>` is the project's acceptance test command):
+      ```
+      # Tasks
+
+      ## 1. Setup
+
+      - [ ] 1.1 Create new module structure and verify expected files are present
+      - [ ] 1.2 Add dependencies and verify installation succeeds
+      - [ ] 1.3 Write tests/acceptance/export/setup covering the happy-path scaffolding and run
+            `<test-cmd> tests/acceptance/export/setup` until green
+
+      ## 2. Core Implementation
+
+      - [ ] 2.1 Implement data export function
+      - [ ] 2.2 Add CSV formatting utilities
+      - [ ] 2.3 Write tests/acceptance/export/csv_export covering the happy path, an edge case
+            (empty dataset) and an error case (unsupported format), and run
+            `<test-cmd> tests/acceptance/export/csv_export` until green before starting phase 3
+      ```
+
+      Reference specs for what needs to be built, design for how to build it, and lld.md for the
+      exact files, method contracts, schema detail and config each task touches. Each task should
+      name the LLD section it implements. The last phase ends with a task to run qa-checklist.md
+      on a deployed build and record the sign-off (that task is for QA, not for the apply agent).
+      Each phase's closing feature task names the worked-example IDs it covers (H = happy path, E = edge case,
+      X = error case), taken from the Feature column of design.md's Worked examples tables (Part 4).
+
+      **Traceability - required for every change (test files AND code):**
+      - Every H/E/X worked example has exactly one test scenario, with a comment line directly above
+        it naming the ID and the path it covers, in plain words:
+          `# H7 — Happy path: a $120 order of 3 items ships free`
+          `# E16 — Edge case: an order of exactly $100.00 still ships free (threshold is inclusive)`
+          `# X14 — Error case: an expired coupon is refused; the message names the expiry date`
+        The test file header links to design.md#worked-examples.
+      - Code carries the same IDs: each service, job, check and each significant branch (guard,
+        refusal, skip, rounding, fallback) has a comment naming the IDs whose path runs through it,
+        e.g. `# X14 expired coupon refuses; E16 inclusive free-shipping threshold`, so a reader can
+        go code → ID → scenario and back.
+      - The last phase includes a coverage task: list every H/E/X ID in design.md and every ID
+        comment in the acceptance tests and confirm the two sets are equal (no ID without a scenario, no
+        scenario without an ID); an edge case found during apply gets a new ID row in design.md
+        AND a scenario, never a scenario alone.
+    requires:
+      - specs
+      - design
+      - lld
+      - qa-checklist
+
+apply:
+  requires: [tasks]
+  tracks: tasks.md
+  instruction: |
+    Read context files, work through pending tasks phase by phase. Do not start a phase's
+    implementation tasks until the previous phase's acceptance tests are green. Pause if you hit
+    blockers or need clarification.

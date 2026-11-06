@@ -1,0 +1,43 @@
+schema: spec-driven
+
+# Project context — injected into EVERY artifact instruction (max 50 KB).
+# The schemas in openspec/schemas/ are stack-neutral and refer to "the project context" for the
+# values below. Fill them in for your project; delete any line that does not apply.
+context: |
+  Stack: <e.g. Rails 8 + MySQL + Hotwire | Django + Postgres + React | Node/Nest + Postgres>
+  Multi-tenant: <yes — the tenant model is `Organization`, column `organization_id` | no>
+
+  Testing
+  - Acceptance test framework: <e.g. Cucumber | Playwright | pytest-bdd>
+  - Acceptance test command (<test-cmd> in the templates): <e.g. bundle exec cucumber>
+  - Test file location: <e.g. features/<domain>/<name>.feature>
+  - Per-run requirements: <e.g. set TEST_ENV_NUMBER=$RANDOM; Redis must be running>
+  - N+1 detector: <e.g. PROSOPITE=1 (Prosopite) | Bullet | nplusone | none>
+  - Linter: <e.g. bundle exec rubocop | ruff check | eslint>
+  - Security scanner + dependency audit: <e.g. brakeman + bundler-audit | bandit + pip-audit | npm audit>
+
+  Architecture
+  - Module boundaries: <e.g. Packwerk packs under app/packs/<domain> | Nx libs | none>
+  - Business operations / services: <e.g. Trailblazer operations, `.call` services>
+  - Authorization layer: <e.g. Pundit — policy_scope then authorize | CanCanCan | django-guardian>
+  - Background jobs + scheduler: <e.g. Sidekiq + sidekiq-cron | Celery + beat | BullMQ>
+  - Notifications: <e.g. Noticed notifiers + ActionMailer>
+  - Front end: <e.g. Turbo frames/streams + Stimulus + ViewComponent>
+  - LLM wrapper: <e.g. LlmService | none>
+
+  Reference screens to copy (design.md › Screen standards)
+  - Index: <path to the best existing list screen>
+  - Show: <path to the best existing detail screen>
+  - Tabs: <path to an existing tabbed screen>
+  - Forms: <path / component used for forms>
+
+  Standing project rules (copied into lld.md › Project Rules Checklist)
+  - <e.g. never call blank?/present? on a relation; use exists?>
+  - <e.g. dates on screens via l(date); emails always "Mon dd, yyyy">
+
+# Optional per-artifact rules, added on top of each schema's own instruction.
+# rules:
+#   design:
+#     - Every design names the reference screen for each new page.
+#   tasks:
+#     - Every phase ends with a green acceptance test run.

@@ -1,0 +1,112 @@
+# [Feature Name] — Manual QA Checklist
+
+<!-- STYLE: bullets and diagrams, not prose. One idea per bullet; a diagram per concept (model, lifecycle, flow); table cells a phrase each — longer reasoning goes in bullets under the table. -->
+
+> **Audience:** Testers running the feature by hand on a deployed build. No code knowledge needed.
+> **Companion documents:** [Proposal](proposal.md) · [Design](design.md)
+
+> **How to use:** work top to bottom. Tick ☐ → ☑ and write Pass or Fail for each row. For a Fail,
+> put the defect link in Notes. Row IDs match the design's worked examples (H/E/X) and UI journeys
+> (J), so a failure maps straight to the automated test that should have caught it.
+
+**ID legend:** **H** = Happy path · **E** = Edge case · **X** = Error case · **J** = UI journey
+step (J2.3 = journey 2, step 3) · **R** = Role sweep · **C** = Cross-cutting check
+
+---
+
+## Contents
+
+<!-- CORE. Links to every ## heading. -->
+
+- [Test Setup](#test-setup)
+- [Happy Path](#happy-path)
+- [Edge Cases](#edge-cases)
+- [Error Cases](#error-cases)
+- [UI Journeys](#ui-journeys)
+- [Role Sweep](#role-sweep)
+- [Cross-cutting Checks](#cross-cutting-checks)
+- [Sign-off](#sign-off)
+
+---
+
+## Test Setup
+
+<!-- CORE. Everything the tester needs before starting: environment, accounts, seed data, and how
+     to trigger background work by hand. Follow the design's shared-setup table. -->
+
+| Item | Detail |
+|---|---|
+| Environment | <!-- staging URL --> |
+| Accounts | <!-- one per role in the Role Sweep, with the tenant each belongs to --> |
+| Second tenant | <!-- a user in a different tenant, for isolation checks --> |
+| Seed data | <!-- records to create first, with exact names/emails from design.md --> |
+| Background work | <!-- how to make it run now: a button (e.g. Sync now), or ask a developer --> |
+
+---
+
+## Happy Path
+
+| ☐ | ID | What to check | Preconditions | Steps | Expected result | Pass / Fail | Notes |
+|---|---|---|---|---|---|---|---|
+| ☐ | H1 | <!-- from design.md H1 --> | <!-- --> | 1. <!-- click / type --> 2. … | <!-- exact on-screen text where there is one --> | | |
+
+## Edge Cases
+
+| ☐ | ID | What to check | Preconditions | Steps | Expected result | Pass / Fail | Notes |
+|---|---|---|---|---|---|---|---|
+| ☐ | E1 | | | | | | |
+
+## Error Cases
+
+| ☐ | ID | What to check | Preconditions | Steps | Expected result (message, who is alerted) | Pass / Fail | Notes |
+|---|---|---|---|---|---|---|---|
+| ☐ | X1 | | | | | | |
+
+---
+
+## UI Journeys
+
+<!-- CONDITIONAL: include when design.md has user journeys (Part 2 "What users see" and the cards). One row per journey step. Check that
+     each numbered callout on the design's wireframe behaves as described. -->
+
+| ☐ | ID | Screen | Do | Expect to see | Pass / Fail | Notes |
+|---|---|---|---|---|---|---|
+| ☐ | J1.1 | <!-- My profile → X panel --> | <!-- open it --> | <!-- ① status, ② field --> | | |
+
+---
+
+## Role Sweep
+
+<!-- CORE. From design.md Policy: every role against every new or changed screen/action. Mark
+     ✓ = allowed and works, ✗ = correctly blocked, ! = wrong. -->
+
+| ID | Screen / action | <!-- Admin --> | <!-- Staff --> | <!-- Customer --> | <!-- Other-tenant user --> |
+|---|---|---|---|---|---|
+| R1 | <!-- open the new page --> | | | | |
+
+---
+
+## Cross-cutting Checks
+
+<!-- CORE. Keep the rows that apply, and mark the rest N/A. -->
+
+| ☐ | ID | Check | Expected | Pass / Fail | Notes |
+|---|---|---|---|---|---|
+| ☐ | C1 | Emails / alerts sent by this feature arrive | Correct recipient, subject and links; dates in the app's email date format | | |
+| ☐ | C2 | Dates on changed screens | Follow the user's locale format | | |
+| ☐ | C3 | Narrow / mobile width | No horizontal scroll; buttons reachable | | |
+| ☐ | C4 | Tenant isolation | A user in a different tenant cannot see or reach any of this data, even with a direct URL | | |
+| ☐ | C5 | Regression on modified screens | Each modified screen still does what it did before | | |
+| ☐ | C6 | Empty states | New lists/panels with no data show a sensible message | | |
+| ☐ | C7 | Looks like the rest of the app | Each changed screen matches the reference screen in design.md *Screen standards*: breadcrumbs, header buttons + actions menu, stats cards, standard table + filter, width | | |
+| ☐ | C8 | No full page reloads for small actions | Tabs fade in place and load lazily; row actions (approve, assign, mark done…) update just the row and cards | | |
+| ☐ | C9 | Explains itself | Every page has a title ⓘ explaining it; computed columns and labels have tooltips; empty lists say what to do next | | |
+| ☐ | C10 | Speed on a large tenant | Lists and dashboards on the largest test tenant open in under ~2 s; no visible slowdown as rows grow | | |
+
+---
+
+## Sign-off
+
+| Tester | Build / commit | Environment | Date | Result | Open defects |
+|---|---|---|---|---|---|
+| | | | | <!-- Pass / Pass with defects / Fail --> | |
