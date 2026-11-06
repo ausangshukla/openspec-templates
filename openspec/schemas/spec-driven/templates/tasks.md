@@ -16,7 +16,7 @@
 - [ ] 1.1 <!-- Task description -->
 - [ ] 1.2 <!-- Task description -->
 - [ ] 1.3 Write `tests/acceptance/<domain>/<phase_1_name>` covering this phase's worked examples
-      (happy path + edge/error cases from design.md).
+      (happy path + edge/error cases from design.md, or business-rules.md when the change has one).
 - [ ] 1.4 UI review (if this phase adds/changes screens): screenshots of each screen beside its
       reference screen from design.md *Screen standards*; fix anything that differs.
 - [ ] 1.5 N+1 check: run `<test-cmd> tests/acceptance/<domain>/<phase_1_name>` with the N+1

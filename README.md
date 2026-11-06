@@ -15,6 +15,7 @@ flowchart LR
         P["proposal.md<br/>why + workflow journey"] --> S["specs/**<br/>requirements"]
         P --> D["design.md<br/>zoom one picture"]
         D --> L["lld.md<br/>developer sign-off"]
+        D -. "large changes" .-> B["business-rules.md<br/>H/E/X tables"]
         S --> Q["qa-checklist.md<br/>manual test rows"]
         D --> Q
         S --> T["tasks.md<br/>phase-gated"]
@@ -39,6 +40,7 @@ flowchart LR
   - Part 3 has one card per box.
   - Part 4 is reference material.
 - **Each design must cover a fixed list of topics.** These include notifications, a query budget (N+1 prevention), 14 architecture patterns, a 12-item security table, and exhaustive edge-case and error-case tables.
+- **business-rules.md for large changes.** When the worked examples pass about 30 rows, or span 3 or more test files, they move out of `design.md` into `business-rules.md`. `design.md` then links to it, and the QA checklist and tasks take their IDs from it. Smaller changes keep the tables in `design.md`. This is a rule in the design instruction, not a separate artifact: OpenSpec has no optional artifacts, so making it one would force a file on every change.
 - **H/E/X traceability.** Every happy-path (H), edge (E) and error (X) worked example becomes exactly one automated test scenario. Code comments name the IDs they implement, so you can trace from code to ID to test and back.
 - **Phase gates.** Each phase ends with a UI review against a named reference screen, an N+1 check and a green test run. The next phase does not start until all three pass.
 - **Reproduce first (bugfix).** Phase 1 writes a test that fails against the current code. The report needs a before/after sequence diagram pair and a blast-radius table.
@@ -92,7 +94,7 @@ These assumptions are built in. Edit the schema if one doesn't fit your project:
 |---|---|
 | `openspec/config.yaml` | Selects `spec-driven` by default; project context placeholders |
 | `openspec/schemas/spec-driven/schema.yaml` | Artifact graph + per-artifact instructions |
-| `openspec/schemas/spec-driven/templates/*.md` | proposal, spec, design, lld, qa-checklist, tasks |
+| `openspec/schemas/spec-driven/templates/*.md` | proposal, spec, design, lld, qa-checklist, tasks, plus business-rules (large changes only) |
 | `openspec/schemas/bugfix/schema.yaml` | Artifact graph + instructions for bug fixes |
 | `openspec/schemas/bugfix/templates/*.md` | report, qa-checklist, tasks |
 | `openspec/schemas/bugfix/SKILL.md` | `/openspec-bugfix` Claude Code command |

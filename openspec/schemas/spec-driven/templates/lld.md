@@ -238,7 +238,7 @@ of migrations; every checked-in schema dump updated -->
 
 ## Test Plumbing
 
-<!-- CORE. What the acceptance tests in design.md's Worked examples (Part 4) need to run. -->
+<!-- CORE. What the acceptance tests in design.md's Worked examples (Part 4), or business-rules.md when the change has one, need to run. -->
 
 | Test file | Stubs / fixtures | Factories | New steps / helpers |
 |---|---|---|---|
